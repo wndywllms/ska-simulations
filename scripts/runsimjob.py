@@ -263,6 +263,9 @@ dFREQ = 43.4
 nCHAN = 500
 AA = "AA2"
 
+use_tm_errors = False
+TIME_OFFSET = 0
+
 '''
 nhrs = 4
 dTIME = 6.8
@@ -481,6 +484,30 @@ avgfreqstep = 4
 tecscreen = "/home/w.williams/projects/skasims/data/scan_0.fits"
 #tecscreen = "None"
 '''
+# settings for AA2 test without ionoshpere and cable errors - for ical testing
+# 2x short 7.5 min obs and 20 MHz band offset from transit by +- time
+nhrs = 7.5/60
+dTIME = 6.8
+FREQ0 = 120.
+dFREQ = 43.4
+nCHAN = 460
+nBANDS = 1
+AA = "AA2"
+identifier = "_test_mid_band_obs1"
+POL_MODE = "Full"
+usesky = 'LoTSSDEEP'
+chan_out = 2
+dchan_out = 2
+do_avg = False
+avgtimestep = 1
+avgfreqstep = 1
+tecscreen = "/home/w.williams/projects/skasims/data/scan_0.fits"
+TIME_OFFSET = 1.
+use_tm_errors = True
+#tecscreen = "None"
+
+
+
 LENGTH_s = nhrs*60*60
 
 restart = 0
@@ -540,8 +567,10 @@ report(f"Sensitivity calculator reports {imsense['value']*1e3:.2f} mJy/bm for th
 
 noise_thresh = f"{imsense['value']*1e3:.3f}mJy"
 
-
-oskar_cmd = f"python {SIMcode} --array {AA} --nhours {nhrs} --timestep {dTIME} --freq {FREQ0} --freqstep {dFREQ} --nchan {nCHAN} --ra {RA0} --dec {DEC0} --skytabfits {SKYTAB} --nsubbands {nBANDS} --tecscreenfits {tecscreen} --pol_mode {POL_MODE}"
+if use_tm_errors:
+    oskar_cmd = f"python {SIMcode} --array {AA} --TM_cableerrs --nhours {nhrs} --offset_start_time {TIME_OFFSET} --timestep {dTIME} --freq {FREQ0} --freqstep {dFREQ} --nchan {nCHAN} --ra {RA0} --dec {DEC0} --skytabfits {SKYTAB} --nsubbands {nBANDS} --tecscreenfits {tecscreen} --pol_mode {POL_MODE}"
+else:
+    oskar_cmd = f"python {SIMcode} --array {AA} --nhours {nhrs} --offset_start_time {TIME_OFFSET} --timestep {dTIME} --freq {FREQ0} --freqstep {dFREQ} --nchan {nCHAN} --ra {RA0} --dec {DEC0} --skytabfits {SKYTAB} --nsubbands {nBANDS} --tecscreenfits {tecscreen} --pol_mode {POL_MODE}"
 
 #ws_cmd = f"wsclean -size 12000 12000 -scale 3arcsec -name {IM}  -weight briggs 1 -pol I -join-channels -channels-out 15 -niter 1000000 -local-rms -auto-mask 3 -auto-threshold 0.3 -mgain 0.8 -mgain-boosting 1.3  -fit-spectral-pol 2  -apply-primary-beam  {MSOUT}"
 # -multiscale -multiscale-scale-bias 0.8 -multiscale-max-scales 3

@@ -59,6 +59,7 @@ def run_oskar(
     skytabfits: str = "None",
     tecscreenfits: str = "None",
     AA: str = "AA2",
+    TM_cableerrs: bool = False,
     nhrs: float = 1,
     RA0: float = 0.,
     DEC0: float = -30.,
@@ -67,6 +68,7 @@ def run_oskar(
     FREQ0: float = 120e6,   # in hertz
     nCHAN: int = 1000,
     dFREQ: float = 21.7e3,   # in hertz
+    offset_start_time: float = 0.,
     nogpu: bool = False,
     hassubbands: bool = False,
     index: int = 0,
@@ -86,7 +88,11 @@ def run_oskar(
     '''
     
     if AA == "AA2":
-        TELDIR = "/home/w.williams/projects/skasims/teldir/SKA-Low_AA2_68S_rigid-rotation_model_noerr.tm"
+        if not:
+            TELDIR = "/home/w.williams/projects/skasims/teldir/SKA-Low_AA2_68S_rigid-rotation_model_noerr.tm"
+        else:
+            TELDIR = "/home/w.williams/projects/skasims/teldir/SKA-Low_AA2_68S_rigid-rotation_model.tm"
+        
     elif AA == "AAstarmod":
         TELDIR = "/home/w.williams/projects/skasims/teldir/telescope_model_AAstar_mod1"
     else:
@@ -141,7 +147,7 @@ def run_oskar(
 
     # get the start time from the tranit time and length of observation
     date = "2027-01-01"
-    TIME0 = transit_time(RA0*u.deg, skao_low_core, Time(date), nhrs/2.)
+    TIME0 = transit_time(RA0*u.deg, skao_low_core, Time(date), (nhrs/2.)+offset_start_time)
     
     #observing_time = Time(TIME0, scale='utc', location=skao_low_core)
     #LST = observing_time.sidereal_time('mean')
@@ -237,9 +243,11 @@ def main():
     )
     parser.add_argument("--nogpu", action="store_true", help="Flag to turn off using gpus in oskar simulation")
     parser.add_argument("--array", choices=["AA2", "AAstarmod"], default="AA2", help="SKA Array release to simulate")
+    parser.add_argument("--TM_cableerrs", action="store_true", help="Flag to turn on cable errors in the OSKAR telescope model")
     parser.add_argument("--ra", type=float, default=0., help="Phase centre RA in deg")
     parser.add_argument("--dec", type=float, default=-30, help="Phase centre DEC in deg")
     parser.add_argument("--nhours", type=float, default=1., help="Number of hours")
+    parser.add_argument("--offset_start_time", type=float, default=0., help="Offset the start time of the observation by this value in hours")
     parser.add_argument("--timestep", type=float, default=8., help="Time step in s")
     parser.add_argument("--freq", type=float, default=120., help="Start frequency in MHz")
     parser.add_argument("--freqstep", type=float, default=48., help="Frequency step in kHz")
@@ -267,6 +275,7 @@ def main():
         print(f"starting oskar simulation for subband {run_i} with {len(freqs_i)} channels")
         run_oskar(
             AA = args.array,
+            TM_cableerrs = args.TM_cableerrs,
             RA0 = args.ra,
             DEC0 = args.dec,
             nhrs = args.nhours,
@@ -274,6 +283,7 @@ def main():
             FREQ0 = freqs_i[0],   # in hertz
             nCHAN = len(freqs_i),
             dFREQ = args.freqstep*1e3,   # in hertz
+            offset_start_time = args.offset_start_time,
             skytabfits = args.skytabfits,
             nogpu = args.nogpu,
             hassubbands = hassubbands,
