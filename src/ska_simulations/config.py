@@ -16,6 +16,10 @@ import yaml
 
 DEFAULT_CONFIG_RESOURCE = "default_config.yaml"
 
+# Pipeline steps, in execution order (see ska_simulations.pipeline).
+STEPS = ("sky", "sensitivity", "oskar", "dp3", "msoverview", "image_dirty", "mask",
+         "image_clean", "find_sources")
+
 # Sub-trees whose keys are free-form (user may add new entries).
 _FREE_FORM = {
     ("telescope_models",),
@@ -133,8 +137,6 @@ def validate(cfg: dict) -> None:
         raise ConfigError(f"Unknown sky.model {cfg['sky']['model']!r}")
     if cfg["run"]["overwrite"] not in ("ask", "yes", "no"):
         raise ConfigError("run.overwrite must be one of ask | yes | no")
-    from .pipeline import STEPS  # local import to avoid a cycle
-
     bad = [s for s in cfg["run"]["steps"] if s not in STEPS]
     if bad:
         raise ConfigError(f"Unknown run.steps {bad}; valid steps are {list(STEPS)}")

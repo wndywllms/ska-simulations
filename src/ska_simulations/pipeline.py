@@ -28,14 +28,11 @@ import sys
 from datetime import datetime
 
 from . import __version__
-from .config import (ConfigError, default_config_text, dump_config, load_config,
+from .config import (STEPS, ConfigError, default_config_text, dump_config, load_config,
                      parse_overrides, resolve_path)
 from .skymodels import build_sky_table, sky_centre
 from .utils import (die, log_time_to_file, ms_names, report, root_name_from_config, run,
                     separator, warn)
-
-STEPS = ("sky", "sensitivity", "oskar", "dp3", "msoverview", "image_dirty", "mask",
-         "image_clean", "find_sources")
 
 SUMMARY_LOG = "simulation_summary.log"
 CONFIG_USED = "config_used.yaml"
