@@ -22,7 +22,7 @@ pip install -e .            # core: numpy, astropy, pyyaml, requests
 pip install -e ".[all]"     # + scipy/shapely (facets), regions, python-casacore/losoto/matplotlib
 ```
 
-The simulation step needs OSKAR's Python bindings (`import oskar`), which are not on PyPI. Install them from the OSKAR source tree. Imaging needs `DP3` and `wsclean` on your `PATH`.
+The simulation step needs OSKAR's Python bindings (`import oskar`), which are not on PyPI. Install them from the OSKAR source tree. Imaging needs `DP3` and `wsclean` on your `PATH`. If these tools live in an Apptainer image, see [Running inside an Apptainer container](#running-inside-an-apptainer-container-without-installing). You don't need to install anything in the image.
 
 ## Running a simulation
 
@@ -90,6 +90,43 @@ These were extracted from the commented-out parameter blocks in the old `runsimj
 | `aa2_sidereal_repeat_20270101.yaml` | 10 min repeat observation for the sidereal-averaging test |
 | `aa2_ical_test_mid_band_obs1.yaml` | 7.5 min, cable errors and TEC screen, offset +1 h from transit |
 | `aastarmod_4h_1000ch.yaml` | AA\* 4 h, 1000 ch. The note in the old script says this run took days and died at 99% |
+
+## Running inside an Apptainer container (without installing)
+
+DP3, WSClean, EveryBeam and OSKAR usually come from an Apptainer image. You don't need to install this package in the image. `bin/ska-apptainer` runs it straight from your git checkout by binding the repo into the container and putting `src/` on `PYTHONPATH`. Edits you make take effect on the next run. Every step runs inside the container, including the OSKAR step, which the pipeline starts as a separate process that inherits `PYTHONPATH`.
+
+```bash
+export SKA_SIF=/path/to/ska-sims.sif
+export SKA_BINDS=/data-hot,/home/w.williams/projects/skasims   # anything not bound by default
+export PATH=/path/to/ska-simulations/bin:$PATH
+
+ska-apptainer configs/examples/aa2_cosmos_ionosphere.yaml          # = ska-runsim ...
+ska-apptainer my_run.yaml --dry-run --set observation.nchan=100
+ska-apptainer oskar_sim --config my_run.yaml --dry-run             # any module: masks, facets, tec_phase, ...
+ska-apptainer --shell                                              # interactive shell, package importable
+```
+
+| Variable | Meaning |
+|---|---|
+| `SKA_SIF` | container image (required) |
+| `SKA_BINDS` | extra bind mounts, comma separated. Apptainer usually binds only `$HOME`, `/tmp` and the current directory, so add the data, telescope-model and WSClean temp directories if they live elsewhere |
+| `SKA_PYTHON` | python inside the container (default `python3`) |
+| `SKA_APPTAINER_OPTS` | options for `apptainer exec` (default `--nv`, which OSKAR needs for the GPU) |
+
+The image's Python needs `numpy`, `astropy`, `pyyaml` and `requests` (plus `oskar`). Check with:
+
+```bash
+apptainer exec $SKA_SIF python3 -c "import numpy, astropy, yaml, requests, oskar"
+```
+
+If something is missing, install it outside the image into a directory you own and add that directory to the path:
+
+```bash
+apptainer exec $SKA_SIF python3 -m pip install --target ~/.ska-deps pyyaml requests
+export PYTHONPATH=~/.ska-deps        # ska-apptainer appends this after src/
+```
+
+For a batch job, call the same script from your job script, e.g. `ska-apptainer my_run.yaml --overwrite yes`.
 
 ## Command-line tools
 

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Run ska-simulations inside an Apptainer image WITHOUT installing it there.
+#
+# The package is taken straight from this git checkout (via PYTHONPATH), so
+# edits to src/ska_simulations take effect on the next run - no reinstall.
+#
+# Usage:
+#   ska-apptainer [module] [args...]
+#     module: a module in src/ska_simulations (pipeline, oskar_sim, masks,
+#             facets, tec_phase, ...). Defaults to 'pipeline' (= ska-runsim).
+#
+# Examples:
+#   export SKA_SIF=/path/to/ska-sims.sif
+#   ska-apptainer configs/examples/aa2_cosmos_ionosphere.yaml
+#   ska-apptainer pipeline my_run.yaml --dry-run
+#   ska-apptainer oskar_sim --config my_run.yaml --dry-run
+#   ska-apptainer --shell          # interactive shell with the package on PYTHONPATH
+#
+# Environment variables:
+#   SKA_SIF       (required) the container image
+#   SKA_BINDS     extra bind mounts, comma separated, e.g. /data-hot,/scratch/me
+#   SKA_PYTHON    python executable inside the container (default: python3)
+#   SKA_APPTAINER_OPTS  extra options for 'apptainer exec' (default: --nv for GPUs)
+set -euo pipefail
+
+: "${SKA_SIF:?Set SKA_SIF to the Apptainer image, e.g. export SKA_SIF=/path/to/ska-sims.sif}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SRC="$REPO/src"
+PY="${SKA_PYTHON:-python3}"
+APPTAINER="${APPTAINER:-apptainer}"
+read -r -a OPTS <<< "${SKA_APPTAINER_OPTS---nv}"
+
+# Always bind the checkout so the container can see the code; plus any extras.
+BINDS="$REPO"
+if [[ -n "${SKA_BINDS:-}" ]]; then BINDS="$BINDS,$SKA_BINDS"; fi
+
+ENVPP="$SRC${PYTHONPATH:+:$PYTHONPATH}"
+run=("$APPTAINER" exec "${OPTS[@]}" --env "PYTHONPATH=$ENVPP" -B "$BINDS" "$SKA_SIF")
+
+if [[ "${1:-}" == "--shell" ]]; then
+    exec "${run[@]}" bash
+fi
+
+MODULE=pipeline
+if [[ $# -gt 0 && -f "$SRC/ska_simulations/$1.py" ]]; then
+    MODULE="$1"; shift
+fi
+exec "${run[@]}" "$PY" -m "ska_simulations.$MODULE" "$@"
