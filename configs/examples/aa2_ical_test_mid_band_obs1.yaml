@@ -1,0 +1,30 @@
+# AA2 test for ical testing: telescope model WITH cable errors and the scan_0 TEC screen.
+# Part of a pair of short 7.5 min observations (20 MHz band) offset from transit
+# by +/- time: this is obs1 (+1 h). For obs2 use e.g.
+#   ska-runsim aa2_ical_test_mid_band_obs1.yaml \
+#       --set observation.time_offset_hours=-1 --set run.identifier=_test_mid_band_obs2
+# (The original runsimjob.py heading said "without ionosphere and cable errors",
+#  but the settings enabled both; they are reproduced as they were.)
+run:
+  identifier: _test_mid_band_obs1
+observation:
+  array: AA2
+  nhours: 0.125                # 7.5 min
+  time_step_s: 6.8
+  start_freq_mhz: 120.0
+  freq_step_khz: 43.4
+  nchan: 460
+  nsubbands: 1
+  pol_mode: Full
+  time_offset_hours: 1.0
+simulator:
+  cable_errors: true
+  ionosphere:
+    tec_screen: scan_0.fits    # null for no ionosphere
+sky:
+  model: LoTSSDEEP
+postprocess:
+  average: false
+imaging:
+  channels_out: 2
+  deconvolution_channels: 2

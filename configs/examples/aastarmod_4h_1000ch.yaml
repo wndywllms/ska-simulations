@@ -1,0 +1,14 @@
+# AA* (modified) 4 h, 1000 channels at 43.4 kHz.
+# NOTE (from runsimjob.py): "this was taking days and died at 99%".
+observation:
+  array: AAstarmod
+  nhours: 4
+  time_step_s: 6.8
+  start_freq_mhz: 120.0
+  freq_step_khz: 43.4
+  nchan: 1000
+  ra_deg: 0
+  dec_deg: -30
+sky:
+  model: LoTSSDEEP
+  flux_limit_jy: 0

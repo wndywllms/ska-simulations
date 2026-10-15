@@ -1,3 +1,16 @@
+"""
+Voronoi-tessellate an image into facets around catalogue sources and write a
+DS9 region file suitable for WSClean ``-facet-regions``.
+
+CLI example (as used for the COSMOS DD-calibrator facets)::
+
+    ska-make-facets ws_..._robm1_mask-MFS-image.fits AA2_..._skytab.fits \
+        facets_ddcals46_sources.reg --label-col NAME --min-flux 0.25 --merge-radius 1
+"""
+from __future__ import annotations
+
+import argparse
+
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -240,40 +253,33 @@ def voronoi_tessellate_image(
 # ---------------------------------------------------------------------------
 # Example usage
 # ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    '''
-    voronoi_tessellate_image(
-        image_path     = "ws_AA2_240.0min_6912channels_3.4s_21.7kHz_120.0MHz_robm1_avg_ab_mask_psfgrid-MFS-image.fits",
-        #catalogue_path = "../AA2_240.0min_6912channels_3.4s_21.7kHz_120.0MHz_skytab.fits",
-        catalogue_path = "new_dir.fits",
-        output_path    = "facets.reg",
-        ra_col         = "RA",
-        dec_col        = "DEC",
-        label_col      = "NAME",       # or None for auto facet_0, facet_1 ...
-        filter_I       = 0.25,
-        merge_radius   = 30*u.arcsec,
-    )
-     '''
-    ''''
-    voronoi_tessellate_image(
-        image_path     = "ws_AA2_60.0min_250channels_6.8s_43.4kHz_120.0MHz_robm1-image.fits",
-        catalogue_path = "AA2_60.0min_250channels_6.8s_43.4kHz_120.0MHz_skytab.fits",
-        output_path    = "facets_five_sources2.reg",
-        ra_col         = "RA",
-        dec_col        = "DEC",
-        label_col      = "NAME",       # or None for auto facet_0, facet_1 ...
-        filter_I       = 0.25,
-        merge_radius   = 30*u.arcsec,
-    )
-    '''
 
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description="Make a Voronoi facet region file from a source catalogue")
+    p.add_argument("image", help="FITS image with WCS header (sets the facet bounds)")
+    p.add_argument("catalogue", help="FITS catalogue with source positions")
+    p.add_argument("output", help="Output DS9 region file, e.g. facets.reg")
+    p.add_argument("--ra-col", default="RA")
+    p.add_argument("--dec-col", default="DEC")
+    p.add_argument("--flux-col", default="I", help="Column used for the flux cut and merge weights")
+    p.add_argument("--min-flux", type=float, default=0.25, help="Only use sources at least this bright")
+    p.add_argument("--label-col", default=None, help="Column with facet names (default facet_0, facet_1...)")
+    p.add_argument("--merge-radius", type=float, default=None,
+                   help="Merge sources closer than this (arcsec) into one facet centre")
+    a = p.parse_args(argv)
     voronoi_tessellate_image(
-        image_path     = "ws_AA2_240.0min_6912channels_3.4s_21.7kHz_120.0MHz_robm1_mask-MFS-image.fits",
-        catalogue_path = "AA2_240.0min_3456channels_6.8s_43.4kHz_120.0MHz_skytab.fits",
-        output_path    = "facets_ddcals46_sources.reg",
-        ra_col         = "RA",
-        dec_col        = "DEC",
-        label_col      = "NAME",       # or None for auto facet_0, facet_1 ...
-        filter_I       = 0.25,
-        merge_radius   = 1*u.arcsec,
+        image_path=a.image,
+        catalogue_path=a.catalogue,
+        output_path=a.output,
+        ra_col=a.ra_col,
+        dec_col=a.dec_col,
+        filter_Icol=a.flux_col,
+        filter_I=a.min_flux,
+        label_col=a.label_col,
+        merge_radius=None if a.merge_radius is None else a.merge_radius * u.arcsec,
     )
+
+
+if __name__ == "__main__":
+    main()

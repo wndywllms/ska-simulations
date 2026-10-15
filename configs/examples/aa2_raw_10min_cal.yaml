@@ -1,0 +1,20 @@
+# AA2 "raw" resolution 10 min calibrator observation (100 Jy point source at RA=15, DEC=-30).
+# Same set-up as aa2_raw_10min_target.yaml with the 'cal' sky model.
+run:
+  identifier: _raw_cal
+observation:
+  array: AA2
+  nhours: 0.16666666666666666   # 10 min
+  time_step_s: 0.85
+  start_freq_mhz: 120.0
+  freq_step_khz: 5.4
+  nchan: 27777
+  nsubbands: 6
+sky:
+  model: cal
+  cal:
+    flux_jy: 100.0
+imaging:
+  npix: 512                # runsimjob.py suggested 512 pixels for the calibrator
+  channels_out: 12
+  deconvolution_channels: 6

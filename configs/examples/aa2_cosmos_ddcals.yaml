@@ -1,0 +1,28 @@
+# Minimal COSMOS sky model (DD calibrators only) at lower resolution,
+# with ionosphere - used to derive DD solutions. 6.8 s, 43.4 kHz, 3456 channels.
+run:
+  identifier: _cosmos_ion_ddcals1
+observation:
+  array: AA2
+  nhours: 4
+  time_step_s: 6.8
+  start_freq_mhz: 120.0
+  freq_step_khz: 43.4
+  nchan: 3456
+  nsubbands: 6
+simulator:
+  ionosphere:
+    tec_screen: scan_0.fits
+sky:
+  model: COSMOS
+  flux_limit_jy: 0
+  cosmos:
+    variable: false
+    ddcal: true
+postprocess:
+  average: true
+  avg_time_step: 2
+  avg_freq_step: 2
+imaging:
+  channels_out: 12
+  deconvolution_channels: 6

@@ -1,14 +1,12 @@
-
-#!/usr/bin/env python3
 """
 Plot and animate direction-dependent phase solutions from an h5parm file.
 
 Usage:
-    python plot_phase_solutions.py solutions.h5
-    python plot_phase_solutions.py solutions.h5 --solset sol000 --soltab phase000
-    python plot_phase_solutions.py solutions.h5 --freq-idx 0 --time-idx 0
-    python plot_phase_solutions.py solutions.h5 --movie
+    ska-plot-dd-phases oskar_tec_phases_scan0.h5 field-solutions.h5
+    ska-plot-dd-phases truth.h5 rapthor.h5 --freq-idx 0 --dir-idx 2 --outdir plots
 """
+
+from __future__ import annotations
 
 import argparse
 import os
@@ -267,14 +265,22 @@ def nearest_index(src, tgt):
 # CLI
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def compare_solutions(h5parm1: str, h5parm2: str, solset: str = "sol000",
+                      soltab: str = "phase000", freq_idx: int = 5, dir_idx: int = 1,
+                      time_idx: int = 10, outdir: str | None = None) -> None:
+    """Compare phase solutions in two h5parms (e.g. OSKAR TEC-screen truth vs rapthor).
+
+    Plots are made against the time/frequency grid of ``h5parm1``; ``h5parm2`` is
+    resampled onto it by nearest neighbour.
+    """
+
 
 
     #data_tec_fr = load_phase_solutions_fulljones("oskar_tec_phase_line1_nofr1.h5", "sol000", "phase000")
     #data_tec = load_phase_solutions("oskar_tec_phases_line1.h5", "sol000", "phase000")
     #data_rapthor = load_phase_solutions("field-solutions-line1.h5", "sol000", "phase000")
-    data_tec = load_phase_solutions("oskar_tec_phases_scan0.h5", "sol000", "phase000")
-    data_rapthor = load_phase_solutions("field-solutions.h5", "sol000", "phase000")
+    data_tec = load_phase_solutions(h5parm1, solset, soltab)
+    data_rapthor = load_phase_solutions(h5parm2, solset, soltab)
     
     data1 = data_tec
     data2 = data_rapthor
@@ -301,7 +307,7 @@ if __name__ == "__main__":
     phase2 = phase2_r[:, it[:, None], jf[None, :], :]
 
 
-    dir_idx = 1
+    # dir_idx is a function argument
     
     ant_names = [aa.split("_")[1].split(")")[0] for aa in ant_names1]
 
@@ -314,7 +320,7 @@ if __name__ == "__main__":
 
 
 
-    freq_idx = 5
+    # freq_idx is a function argument
     f_mhz1 = freqs1[freq_idx] / 1e6
     f_mhz2 = freqs2[freq_idx] / 1e6
     
@@ -395,7 +401,7 @@ if __name__ == "__main__":
     fig.supylabel("Phase")
         
 
-    time_idx = 10
+    # time_idx is a function argument
     #print(f"time at time_idx2 of {time_idx2} is {times2[time_idx2]}")
     #time_idxs1 = np.where((times1 > times2[time_idx2]) & (times1 < times2[time_idx2+2]))[0]
     #print (time_idxs1)
@@ -440,3 +446,31 @@ if __name__ == "__main__":
         plt.close(fig)
         print(f"  Saved {outpath}")
     '''
+
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
+        for num in plt.get_fignums():
+            path = os.path.join(outdir, f"phase_compare_{num}.png")
+            plt.figure(num).savefig(path, dpi=120)
+            print(f"Saved {path}")
+    else:
+        plt.show()
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description="Compare direction-dependent phase solutions in two h5parms")
+    p.add_argument("h5parm1", help="Reference solutions, e.g. ska-tec-phase output (oskar_tec_phases.h5)")
+    p.add_argument("h5parm2", help="Solutions to compare, e.g. rapthor field-solutions.h5")
+    p.add_argument("--solset", default="sol000")
+    p.add_argument("--soltab", default="phase000")
+    p.add_argument("--freq-idx", type=int, default=5)
+    p.add_argument("--dir-idx", type=int, default=1)
+    p.add_argument("--time-idx", type=int, default=10)
+    p.add_argument("--outdir", default=None, help="Save PNGs here instead of showing them")
+    a = p.parse_args(argv)
+    compare_solutions(a.h5parm1, a.h5parm2, a.solset, a.soltab, a.freq_idx, a.dir_idx,
+                      a.time_idx, a.outdir)
+
+
+if __name__ == "__main__":
+    main()

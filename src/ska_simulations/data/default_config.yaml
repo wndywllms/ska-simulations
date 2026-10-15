@@ -1,0 +1,160 @@
+# =============================================================================
+# ska-simulations: default configuration
+# =============================================================================
+# Every tunable parameter of the simulation pipeline lives here. A run config
+# only needs to contain the values that differ from these defaults - it is
+# deep-merged on top of this file. Unknown keys are rejected so that typos are
+# caught early.
+#
+# Print this file with:   ska-runsim --print-default-config > my_run.yaml
+# Override on the CLI:    ska-runsim my_run.yaml --set observation.nchan=100
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Site-specific locations. Relative file names elsewhere in this config
+# (sky catalogues, noise files, TEC screens, telescope models) are resolved
+# against data_dir / telescope_dir. Environment variables and ~ are expanded.
+# -----------------------------------------------------------------------------
+paths:
+  data_dir: /home/w.williams/projects/skasims/data
+  telescope_dir: /home/w.williams/projects/skasims/teldir
+  work_dir: .                  # parent directory in which each run directory is created
+  wsclean_temp_dir: /data-hot/not-backup/w.williams/wsclean_temp   # null to omit -temp-dir
+  msoverview_script: /home/w.williams/scripts/msoverview.py         # null to skip that step
+  find_sources_script: /home/w.williams/projects/skasims/python/find_sources.py
+
+# OSKAR telescope model directories (relative to paths.telescope_dir), per array.
+# 'cable_errors' is used when simulator.cable_errors is true.
+telescope_models:
+  AA2:
+    default: SKA-Low_AA2_68S_rigid-rotation_model_noerr.tm
+    cable_errors: SKA-Low_AA2_68S_rigid-rotation_model.tm
+  AAstarmod:
+    default: telescope_model_AAstar_mod1
+    cable_errors: null
+
+# -----------------------------------------------------------------------------
+# Run control
+# -----------------------------------------------------------------------------
+run:
+  identifier: ""               # suffix appended to the run-directory name
+  restart: false               # reuse an existing run directory instead of recreating it
+  overwrite: ask               # existing run dir and not restarting: ask | yes | no
+  dry_run: false               # print external commands without running them
+  # Pipeline steps, in order. Remove entries to skip them (e.g. on restart).
+  steps: [sky, sensitivity, oskar, dp3, msoverview, image_dirty, mask, image_clean, find_sources]
+
+# -----------------------------------------------------------------------------
+# Observation
+# -----------------------------------------------------------------------------
+observation:
+  array: AA2                   # AA2 | AAstarmod
+  nhours: 1.0                  # observation length in hours (fractions allowed, e.g. 0.125)
+  time_step_s: 6.8             # integration time (s)
+  start_freq_mhz: 120.0        # frequency of the first channel (MHz)
+  freq_step_khz: 43.4          # channel width (kHz)
+  nchan: 500                   # total number of channels
+  nsubbands: 1                 # split the band into this many measurement sets
+  pol_mode: Full               # OSKAR telescope/pol_mode: Full | Scalar
+  start_date: "2027-01-01"     # date on which the transit is computed
+  time_offset_hours: 0.0       # shift the observation start relative to being centred on transit
+  ra_deg: null                 # phase centre; null -> use the sky model's centre (see sky.*.centre)
+  dec_deg: null
+
+# -----------------------------------------------------------------------------
+# OSKAR simulator settings
+# -----------------------------------------------------------------------------
+simulator:
+  use_gpu: true
+  double_precision: true
+  cable_errors: false          # use the telescope model with cable errors
+  max_sources_per_chunk: 200000
+  max_time_samples_per_block: 8
+  ms_dish_diameter: 39
+  normalise_beams_at_phase_centre: false
+  normalise_array_pattern: true
+  keep_log_file: true
+  noise:
+    enable: true
+    seed: 42
+    # These files must match time_step_s and freq_step_khz. Placeholders are
+    # filled from the observation section (resolved against paths.data_dir).
+    freq_file: "oskar_noise_freqs_{time_step_s:g}s_{freq_step_khz:g}kHz.txt"
+    rms_file: "oskar_noise_rms_{time_step_s:g}s_{freq_step_khz:g}kHz.txt"
+  ionosphere:
+    tec_screen: null           # FITS TEC screen (relative to data_dir); null -> no ionosphere
+    screen_height_km: null     # null -> OSKAR default
+  extra_settings: {}           # any other OSKAR settings, e.g. {"telescope/allow_station_beam_duplication": true}
+
+# -----------------------------------------------------------------------------
+# Sky model
+# -----------------------------------------------------------------------------
+sky:
+  model: LoTSSDEEP             # LoTSSDEEP | COSMOS | testsky | cal | none
+  flux_limit_jy: 0.0           # drop sources fainter than this (Jy)
+  ref_freq_hz: 120.0e6         # reference frequency written to the OSKAR sky table
+  spectral_index: -0.7         # used when the catalogue has no spectral index
+  lotss_deep:                  # LoTSS-deep fields, recentred on (0,0) - shifted to the phase centre
+    catalogue: LoTSS_deep_merge_renorm.fits
+    catalogue_smallfield: LoTSS_deep_merge_renorm_smallfield.fits
+    smallfield: false
+    box_halfwidth_deg: 3.4     # keep |RA|,|DEC| < this before shifting
+    centre: [0.0, -30.0]
+  cosmos:                      # SRCnet combined COSMOS catalogue (absolute positions)
+    catalogue: SRCnet_Combined_input_catalogue_alpha.fits
+    catalogue_variable: SRCnet_Combined_input_catalogue_alpha_variable.fits
+    catalogue_ddcal: SRCnet_Combined_input_catalogue_alpha_ddcal.fits
+    variable: false            # use the catalogue with variable sources
+    ddcal: false               # use the minimal DD-calibrator catalogue
+    centre: [150.0, 2.23]
+  testsky:                     # simple 5-source model (make_test_skymodel.py), offsets from centre
+    catalogue: test_skymodel_simplesquare.fits
+    centre: [30.5, -30.0]
+  cal:                         # single unresolved calibrator at the phase centre
+    flux_jy: 100.0
+    centre: [15.0, -30.0]
+
+# -----------------------------------------------------------------------------
+# SKAO sensitivity calculator (used for the CLEAN threshold)
+# -----------------------------------------------------------------------------
+sensitivity:
+  enabled: true
+  url: https://sensitivity-calculator.skao.int/api/v11/low/continuum/calculate
+  elevation_limit_deg: 20.0
+  weighting: natural
+  timeout_s: 60
+  subarray:
+    AA2: LOW_AA2_all
+    AAstarmod: LOW_AAstar_all
+
+# -----------------------------------------------------------------------------
+# DP3 post-processing (averaging + applying the beam)
+# -----------------------------------------------------------------------------
+postprocess:
+  apply_beam: true
+  average: false
+  avg_time_step: 1
+  avg_freq_step: 1
+
+# -----------------------------------------------------------------------------
+# WSClean imaging
+# -----------------------------------------------------------------------------
+imaging:
+  npix: 4096                   # 16384 ~ 6.8 deg at 1.5"; 8192; 4096 (test sky); 512 (calibrator)
+  cell: 1.5arcsec
+  weight: briggs -1
+  name_suffix: robm1           # image names: ws_<root>_<name_suffix>[_mask]
+  dirty_only: false            # stop after the dirty image
+  channels_out: 2
+  deconvolution_channels: 2
+  abs_threshold: null          # e.g. "0.1mJy"; null -> sensitivity-calculator noise x threshold_factor
+  threshold_factor: 1.0
+  dirty_args: "-log-time -pol I -niter 0 -no-reorder"
+  clean_args: >-
+    -log-time -pol I -join-channels -fit-spectral-pol 2 -niter 1000000
+    -dd-psf-grid 5 5 -mgain 0.8 -mgain-boosting 1.3
+    -parallel-deconvolution 2048 -apply-primary-beam
+  # To do the beam in facets, add e.g.:
+  #   -facet-regions ds9.reg -apply-facet-beam -facet-beam-update 120
+  mask_min_radius_pix: 2       # minimum ellipse semi-axis when painting the CLEAN mask
+  find_sources: false          # run paths.find_sources_script (PyBDSF) on the final image

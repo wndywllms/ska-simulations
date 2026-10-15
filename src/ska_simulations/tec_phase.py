@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-oskar_tec_phase_reproduce.py — Independently reproduce the per-station,
+tec_phase.py (formerly oskar_tec_phase_reproduce.py) — Independently reproduce the per-station,
 per-direction ionospheric phase (and, optionally, Faraday-rotation Jones
 matrix) that OSKAR applied from an external TEC screen, using only the
 measurement set OSKAR wrote and the TEC screen FITS file OSKAR read from.
@@ -141,35 +141,34 @@ ASSUMPTIONS / things to verify against your own setup
     knowing about that pattern: (a) a name that was only ever a loop
     variable (t, ti, freq, tec, j, angle, ...) ends up holding just its
     *last* iteration's value, not a history across the loop; and (b) this
-    only helps interactively — run with `python -i
-    oskar_tec_phase_reproduce.py ...` (or %run in IPython/Jupyter) so the
+    only helps interactively — run with `python -i -m
+    ska_simulations.tec_phase ...` (or %run in IPython/Jupyter) so the
     process doesn't exit before you get a prompt to inspect those globals
     from, and be aware that a stale global from an earlier --faraday run
     (e.g. `jones`) isn't cleared if a later run in the same session omits
     --faraday.
 
-Requires: python-casacore, astropy, numpy, and igrf14.py (the IGRF-14 port
-of OSKAR's oskar_station_evaluate_magnetic_field.c, delivered earlier in
-this conversation) in the same directory as this script — only needed if
-you pass --faraday. --h5parm additionally requires losoto.
+Requires: python-casacore, astropy, numpy; --faraday uses
+ska_simulations.igrf14 (the IGRF-14 port of OSKAR's
+oskar_station_evaluate_magnetic_field.c). --h5parm additionally requires losoto.
     pip install python-casacore astropy numpy losoto
 
 Usage:
-    python oskar_tec_phase_reproduce.py obs.ms tec_screen.fits facets.reg \\
+    ska-tec-phase obs.ms tec_screen.fits facets.reg \\
         -o phases.npz
 
     # also compute the Faraday-rotation Jones matrix per station/source/
-    # channel/time (requires igrf14.py alongside this script):
-    python oskar_tec_phase_reproduce.py obs.ms tec_screen.fits facets.reg \\
+    # channel/time (uses ska_simulations.igrf14):
+    ska-tec-phase obs.ms tec_screen.fits facets.reg \\
         -o phases.npz --faraday
 
     # also write the scalar phase solutions out as a LoSoTo-compatible h5parm:
-    python oskar_tec_phase_reproduce.py obs.ms tec_screen.fits facets.reg \\
+    ska-tec-phase obs.ms tec_screen.fits facets.reg \\
         -o phases.npz --h5parm phases.h5
 
     # --faraday + --h5parm together write the full Jones matrix to the
     # h5parm instead (amplitude000 + phase000, each with a 4-entry pol axis):
-    python oskar_tec_phase_reproduce.py obs.ms tec_screen.fits facets.reg \\
+    ska-tec-phase obs.ms tec_screen.fits facets.reg \\
         -o phases.npz --faraday --h5parm jones.h5
 
     facets.reg: a DS9-format facet region file (as passed to wsclean's
@@ -195,7 +194,7 @@ except ImportError:
     sys.exit("This script requires python-casacore: pip install python-casacore")
 
 try:
-    import igrf14
+    from . import igrf14
 except ImportError:
     igrf14 = None  # Only required if --faraday is used; checked in main().
 
@@ -912,7 +911,7 @@ def main():
     parser.add_argument("--faraday", action="store_true",
                          help="Also compute the Faraday-rotation Jones matrix per "
                               "station/source/channel/time, using IGRF-14 "
-                              "(via igrf14.py, required alongside this script) "
+                              "(via ska_simulations.igrf14) "
                               "for each station's geomagnetic field. See "
                               "assumptions 6-9 in the module docstring.")
     parser.add_argument("--year", type=float, default=None,
@@ -1105,8 +1104,13 @@ def main():
     return locals()   # everything main() built, as a dict
 
 
+def cli():
+    """Console-script entry point (``ska-tec-phase``)."""
+    main()
+
+
 if __name__ == "__main__":
-    #main()
+    # expose everything main() built for interactive use: python -i -m ska_simulations.tec_phase ...
     globals().update(main())
 
 

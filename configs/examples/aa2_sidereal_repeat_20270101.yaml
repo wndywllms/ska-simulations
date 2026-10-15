@@ -1,0 +1,23 @@
+# Short (10 min) repeat observation for the sidereal-averaging test.
+# LoTSS-deep sky with S > 1 mJy (gives 6288 sources).
+run:
+  identifier: _20270101
+observation:
+  array: AA2
+  nhours: 0.16666666666666666   # 10 min
+  time_step_s: 3.4
+  start_freq_mhz: 120.0
+  freq_step_khz: 21.7
+  nchan: 1000
+  nsubbands: 1
+  start_date: "2027-01-01"
+sky:
+  model: LoTSSDEEP
+  flux_limit_jy: 1.0e-3
+postprocess:
+  average: true
+  avg_time_step: 2
+  avg_freq_step: 2
+imaging:
+  channels_out: 2
+  deconvolution_channels: 2

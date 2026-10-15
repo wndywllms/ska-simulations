@@ -1,0 +1,15 @@
+# AA2 4 h, LoTSS-deep sky (S > 0.45 mJy), 6912 x 21.7 kHz channels in 2 sub-bands.
+observation:
+  array: AA2
+  nhours: 4
+  time_step_s: 3.4
+  start_freq_mhz: 120.0
+  freq_step_khz: 21.7
+  nchan: 6912
+  nsubbands: 2
+sky:
+  model: LoTSSDEEP
+  flux_limit_jy: 0.45e-3
+imaging:
+  channels_out: 2
+  deconvolution_channels: 2

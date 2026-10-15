@@ -1,0 +1,19 @@
+# AA2 "raw" resolution 10 min observation of a LoTSS-deep target field:
+# 0.85 s, 5.4 kHz channels (27777 channels, 6 sub-bands).
+# See aa2_raw_10min_cal.yaml for the matching calibrator observation.
+run:
+  identifier: _raw_target
+observation:
+  array: AA2
+  nhours: 0.16666666666666666   # 10 min
+  time_step_s: 0.85
+  start_freq_mhz: 120.0
+  freq_step_khz: 5.4
+  nchan: 27777
+  nsubbands: 6
+sky:
+  model: LoTSSDEEP
+  flux_limit_jy: 0.4e-3
+imaging:
+  channels_out: 12
+  deconvolution_channels: 6

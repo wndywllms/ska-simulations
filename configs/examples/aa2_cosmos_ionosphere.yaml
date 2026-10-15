@@ -1,0 +1,27 @@
+# AA2 4 h COSMOS field with an external TEC screen (ionosphere test),
+# averaged x4 in time and frequency before imaging.
+# (runsimjob.py also had an identical block labelled "using only bright
+#  sources for cosmos calibration".)
+run:
+  identifier: _cosmos_ion
+observation:
+  array: AA2
+  nhours: 4
+  time_step_s: 3.4
+  start_freq_mhz: 120.0
+  freq_step_khz: 21.7
+  nchan: 6912
+  nsubbands: 6
+simulator:
+  ionosphere:
+    tec_screen: scan_0.fits    # in paths.data_dir; null for no ionosphere
+sky:
+  model: COSMOS
+  flux_limit_jy: 0
+postprocess:
+  average: true
+  avg_time_step: 4
+  avg_freq_step: 4
+imaging:
+  channels_out: 12
+  deconvolution_channels: 6

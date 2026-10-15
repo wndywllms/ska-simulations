@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ska-simulations"
+version = "0.2.0"
+description = "Tools for running OSKAR simulations of SKA-Low and imaging the results"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "astropy",
+    "pyyaml",
+    "requests",
+]
+# OSKAR's python bindings (import oskar) are needed for the simulation step but are
+# not on PyPI: install them from the OSKAR source tree (python/ directory).
+
+[project.optional-dependencies]
+facets = ["scipy", "shapely"]
+regions = ["regions"]
+calibration = ["python-casacore", "losoto", "matplotlib"]
+all = ["scipy", "shapely", "regions", "python-casacore", "losoto", "matplotlib"]
+test = ["pytest"]
+
+[project.scripts]
+ska-runsim = "ska_simulations.pipeline:main"
+ska-oskar-sim = "ska_simulations.oskar_sim:main"
+ska-sensitivity = "ska_simulations.sensitivity:main"
+ska-make-mask = "ska_simulations.masks:main"
+ska-make-facets = "ska_simulations.facets:main"
+ska-ds9-to-fits = "ska_simulations.ds9_to_fits:main"
+ska-tec-phase = "ska_simulations.tec_phase:cli"
+ska-plot-dd-phases = "ska_simulations.plot_dd_phase_sols:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ska_simulations = ["data/*.yaml"]

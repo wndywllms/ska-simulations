@@ -1,0 +1,17 @@
+# AA2 v2 dataset for SRCnet: 4 h, COSMOS sky, 6912 x 21.7 kHz channels in 6 sub-bands.
+run:
+  identifier: _cosmos
+observation:
+  array: AA2
+  nhours: 4
+  time_step_s: 3.4
+  start_freq_mhz: 120.0
+  freq_step_khz: 21.7
+  nchan: 6912
+  nsubbands: 6
+sky:
+  model: COSMOS            # alternatives used: cal, LoTSSDEEP
+  flux_limit_jy: 0         # previously also 0.45e-3
+imaging:
+  channels_out: 40
+  deconvolution_channels: 20

@@ -1,0 +1,20 @@
+# AA* (modified) v1 dataset for SRCnet: 30 min, full COSMOS sky,
+# 50 MHz start, 13824 x 21.7 kHz channels in 12 sub-bands, no averaging or ionosphere.
+run:
+  identifier: _cosmos_full
+observation:
+  array: AAstarmod
+  nhours: 0.5
+  time_step_s: 3.4
+  start_freq_mhz: 50.0
+  freq_step_khz: 21.7
+  nchan: 13824
+  nsubbands: 12
+sky:
+  model: COSMOS
+  flux_limit_jy: 0
+postprocess:
+  average: false
+imaging:
+  channels_out: 30
+  deconvolution_channels: 15

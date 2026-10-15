@@ -1,3 +1,11 @@
+"""
+Paint elliptical source footprints from a sky catalogue onto a template FITS
+image to make a WSClean ``-fits-mask``.
+
+CLI: ``ska-make-mask image.fits catalogue.fits mask.fits``
+"""
+from __future__ import annotations
+
 import argparse
 import numpy as np
 from astropy.io import fits
@@ -16,6 +24,7 @@ def paint_sources_onto_image(
     min_col: str = "Min",
     pa_col: str = "PA",
     shape_unit: u.Unit = u.arcsec,
+    min_radius_pix: float = 2,
 ) -> None:
     """
     Paint elliptical source footprints (value=1) onto a template FITS image.
@@ -31,6 +40,7 @@ def paint_sources_onto_image(
     min_col      : catalogue column name for semi-minor axis
     pa_col       : catalogue column name for position angle (degrees E of N)
     shape_unit   : unit of maj/min columns (default arcsec)
+    min_radius_pix : minimum semi-axis painted, in pixels (default 2)
     """
 
     # --- 1. Load image and WCS ---
@@ -82,8 +92,8 @@ def paint_sources_onto_image(
         a_pix = a / pix_scale          # semi-major axis in pixels
         b_pix = b / pix_scale          # semi-minor axis in pixels
         
-        a_pix = np.max((a_pix, 2))     # ensure at least 2 pix
-        b_pix = np.max((b_pix, 2))
+        a_pix = max(a_pix, min_radius_pix)     # ensure at least min_radius_pix
+        b_pix = max(b_pix, min_radius_pix)
 
         # Bounding box: pad by the semi-major axis to be safe
         pad    = int(np.ceil(a_pix)) + 1
@@ -123,16 +133,16 @@ def paint_sources_onto_image(
 
 
 
-def main():
-    # 1. Initialize the parser
+def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="A simple script to demonstrate argparse."
+        description="Make a FITS CLEAN mask by painting catalogue sources onto a template image"
     )
     parser.add_argument("image_template", help="The image to use as a template")
     parser.add_argument("source_catalogue", help="The source catlogue")
     parser.add_argument("mask_file", help="The name output mask file")
-    
-    args = parser.parse_args()
+    parser.add_argument("--min-radius-pix", type=float, default=2, help="Minimum ellipse semi-axis in pixels")
+
+    args = parser.parse_args(argv)
     
     paint_sources_onto_image(
     image_path     = args.image_template,
@@ -144,9 +154,8 @@ def main():
     min_col        = "MIN",       # semi-minor axis
     pa_col         = "PA",        # position angle, degrees E of N
     shape_unit     = u.arcsec,
+    min_radius_pix = args.min_radius_pix,
     )
 
 if __name__ == "__main__":
     main()
-
-
