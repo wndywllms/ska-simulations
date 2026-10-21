@@ -49,11 +49,11 @@ run:
 # -----------------------------------------------------------------------------
 observation:
   array: AA2                   # AA2 | AAstarmod
-  nhours: 1.0                  # observation length in hours (fractions allowed, e.g. 0.125)
+  nhours: 0.5                  # observation length in hours (fractions allowed, e.g. 0.125)
   time_step_s: 6.8             # integration time (s)
   start_freq_mhz: 120.0        # frequency of the first channel (MHz)
   freq_step_khz: 43.4          # channel width (kHz)
-  nchan: 500                   # total number of channels
+  nchan: 100                   # total number of channels
   nsubbands: 1                 # split the band into this many measurement sets
   pol_mode: Full               # OSKAR telescope/pol_mode: Full | Scalar
   start_date: "2027-01-01"     # date on which the transit is computed
