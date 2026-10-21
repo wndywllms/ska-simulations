@@ -22,7 +22,7 @@ pip install -e .            # core: numpy, astropy, pyyaml, requests
 pip install -e ".[all]"     # + scipy/shapely (facets), regions, python-casacore/losoto/matplotlib
 ```
 
-The simulation step needs OSKAR's Python bindings (`import oskar`), which are not on PyPI. Install them from the OSKAR source tree. Imaging needs `DP3` and `wsclean` on your `PATH`. If these tools live in an Apptainer image, see [Running inside an Apptainer container](#running-inside-an-apptainer-container-without-installing). You don't need to install anything in the image.
+The simulation step needs OSKAR's Python bindings (`import oskar`), which are not on PyPI. Install them from the OSKAR source tree. Imaging needs `DP3` and `wsclean` on your `PATH`. If these tools live in an Apptainer or Singularity image, see [Running inside a container](#running-inside-an-apptainer-or-singularity-container-without-installing). You don't need to install anything in the image.
 
 ## Running a simulation
 
@@ -91,9 +91,9 @@ These were extracted from the commented-out parameter blocks in the old `runsimj
 | `aa2_ical_test_mid_band_obs1.yaml` | 7.5 min, cable errors and TEC screen, offset +1 h from transit |
 | `aastarmod_4h_1000ch.yaml` | AA\* 4 h, 1000 ch. The note in the old script says this run took days and died at 99% |
 
-## Running inside an Apptainer container (without installing)
+## Running inside an Apptainer or Singularity container (without installing)
 
-DP3, WSClean, EveryBeam and OSKAR usually come from an Apptainer image. You don't need to install this package in the image. `bin/ska-apptainer` runs it straight from your git checkout by binding the repo into the container and putting `src/` on `PYTHONPATH`. Edits you make take effect on the next run. Every step runs inside the container, including the OSKAR step, which the pipeline starts as a separate process that inherits `PYTHONPATH`.
+DP3, WSClean, EveryBeam and OSKAR usually come from an Apptainer or Singularity image. You don't need to install this package in the image. `bin/ska-apptainer` runs it straight from your git checkout by binding the repo into the container and putting `src/` on `PYTHONPATH`. Edits you make take effect on the next run. Every step runs inside the container, including the OSKAR step, which the pipeline starts as a separate process that inherits `PYTHONPATH`.
 
 ```bash
 export SKA_SIF=/path/to/ska-sims.sif
@@ -109,11 +109,12 @@ ska-apptainer --shell                                              # interactive
 | Variable | Meaning |
 |---|---|
 | `SKA_SIF` | container image (required) |
+| `SKA_CONTAINER_RUNTIME` | `apptainer` or `singularity`. By default the script uses `apptainer` if it's installed, otherwise `singularity` |
 | `SKA_BINDS` | extra bind mounts, comma separated. Apptainer usually binds only `$HOME`, `/tmp` and the current directory, so add the data, telescope-model and WSClean temp directories if they live elsewhere |
 | `SKA_PYTHON` | python inside the container (default `python3`) |
-| `SKA_APPTAINER_OPTS` | options for `apptainer exec` (default `--nv`, which OSKAR needs for the GPU) |
+| `SKA_APPTAINER_OPTS` | options for `apptainer exec` / `singularity exec` (default `--nv`, which OSKAR needs for the GPU) |
 
-The script starts the container in the directory you ran it from (`--pwd "$PWD"`, with `$PWD` bound). Without this, Apptainer falls back to `$HOME` whenever it can't bind the current directory, and relative paths such as the default `paths.work_dir: .` would put run directories in your home directory. If you call `apptainer exec` yourself, add `--pwd "$PWD" -B "$PWD"`.
+The script starts the container in the directory you ran it from (`--pwd "$PWD"`, with `$PWD` bound). Without this, Apptainer falls back to `$HOME` whenever it can't bind the current directory, and relative paths such as the default `paths.work_dir: .` would put run directories in your home directory. If you call `apptainer exec` or `singularity exec` yourself, add `--pwd "$PWD" -B "$PWD"`. With Singularity, the commands below work the same with `singularity` in place of `apptainer`.
 
 The image's Python needs `numpy`, `astropy`, `pyyaml` and `requests` (plus `oskar`). Check with:
 

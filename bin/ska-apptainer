@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run ska-simulations inside an Apptainer image WITHOUT installing it there.
+# Run ska-simulations inside an Apptainer or Singularity image WITHOUT
+# installing it there.
 #
 # The package is taken straight from this git checkout (via PYTHONPATH), so
 # edits to src/ska_simulations take effect on the next run - no reinstall.
@@ -18,16 +19,30 @@
 #
 # Environment variables:
 #   SKA_SIF       (required) the container image
+#   SKA_CONTAINER_RUNTIME  apptainer or singularity (default: apptainer if it is
+#                 on PATH, otherwise singularity; APPTAINER=... also works)
 #   SKA_BINDS     extra bind mounts, comma separated, e.g. /data-hot,/scratch/me
 #   SKA_PYTHON    python executable inside the container (default: python3)
-#   SKA_APPTAINER_OPTS  extra options for 'apptainer exec' (default: --nv for GPUs)
+#   SKA_APPTAINER_OPTS  extra options for '<runtime> exec' (default: --nv for GPUs)
 set -euo pipefail
 
 : "${SKA_SIF:?Set SKA_SIF to the Apptainer image, e.g. export SKA_SIF=/path/to/ska-sims.sif}"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$REPO/src"
 PY="${SKA_PYTHON:-python3}"
-APPTAINER="${APPTAINER:-apptainer}"
+RUNTIME="${SKA_CONTAINER_RUNTIME:-${APPTAINER:-}}"
+if [[ -z "$RUNTIME" ]]; then
+    if command -v apptainer >/dev/null 2>&1; then RUNTIME=apptainer
+    elif command -v singularity >/dev/null 2>&1; then RUNTIME=singularity
+    else echo "ska-apptainer: neither apptainer nor singularity found on PATH" >&2; exit 1
+    fi
+fi
+# Variables are passed in as APPTAINERENV_<NAME> / SINGULARITYENV_<NAME>, which
+# (unlike --env) works with every Apptainer and Singularity version.
+case "$(basename "$RUNTIME")" in
+    singularity*) ENVPREFIX=SINGULARITYENV_ ;;
+    *)            ENVPREFIX=APPTAINERENV_ ;;
+esac
 read -r -a OPTS <<< "${SKA_APPTAINER_OPTS---nv}"
 
 # Bind the checkout (so the container can see the code) and the current
@@ -44,8 +59,8 @@ if [[ "$PWD" != "$REPO" ]]; then BINDS="$BINDS,$PWD"; fi
 if [[ -n "${SKA_BINDS:-}" ]]; then BINDS="$BINDS,$SKA_BINDS"; fi
 
 ENVPP="$SRC${PYTHONPATH:+:$PYTHONPATH}"
-run=("$APPTAINER" exec "${OPTS[@]}" --pwd "$PWD" --env "PYTHONPATH=$ENVPP"
-     --env "SKA_LAUNCH_DIR=$PWD" -B "$BINDS" "$SKA_SIF"
+export "${ENVPREFIX}PYTHONPATH=$ENVPP" "${ENVPREFIX}SKA_LAUNCH_DIR=$PWD"
+run=("$RUNTIME" exec "${OPTS[@]}" --pwd "$PWD" -B "$BINDS" "$SKA_SIF"
      sh -c 'cd "$SKA_LAUNCH_DIR" || exit 1; exec "$@"' ska-apptainer)
 
 if [[ "${1:-}" == "--shell" ]]; then
