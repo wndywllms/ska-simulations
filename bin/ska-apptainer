@@ -30,12 +30,18 @@ PY="${SKA_PYTHON:-python3}"
 APPTAINER="${APPTAINER:-apptainer}"
 read -r -a OPTS <<< "${SKA_APPTAINER_OPTS---nv}"
 
-# Always bind the checkout so the container can see the code; plus any extras.
+# Bind the checkout (so the container can see the code) and the current
+# directory, plus any extras. Apptainer only binds the cwd automatically when it
+# can; if it can't (e.g. a cwd outside the default binds, or --contain) it starts
+# in $HOME instead, and relative paths such as the default work_dir "." would
+# then point at your home directory. Binding $PWD and passing --pwd makes the
+# container start in the directory you launched from.
 BINDS="$REPO"
+if [[ "$PWD" != "$REPO" ]]; then BINDS="$BINDS,$PWD"; fi
 if [[ -n "${SKA_BINDS:-}" ]]; then BINDS="$BINDS,$SKA_BINDS"; fi
 
 ENVPP="$SRC${PYTHONPATH:+:$PYTHONPATH}"
-run=("$APPTAINER" exec "${OPTS[@]}" --env "PYTHONPATH=$ENVPP" -B "$BINDS" "$SKA_SIF")
+run=("$APPTAINER" exec "${OPTS[@]}" --pwd "$PWD" --env "PYTHONPATH=$ENVPP" -B "$BINDS" "$SKA_SIF")
 
 if [[ "${1:-}" == "--shell" ]]; then
     exec "${run[@]}" bash

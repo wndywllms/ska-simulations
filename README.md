@@ -113,6 +113,8 @@ ska-apptainer --shell                                              # interactive
 | `SKA_PYTHON` | python inside the container (default `python3`) |
 | `SKA_APPTAINER_OPTS` | options for `apptainer exec` (default `--nv`, which OSKAR needs for the GPU) |
 
+The script starts the container in the directory you ran it from (`--pwd "$PWD"`, with `$PWD` bound). Without this, Apptainer falls back to `$HOME` whenever it can't bind the current directory, and relative paths such as the default `paths.work_dir: .` would put run directories in your home directory. If you call `apptainer exec` yourself, add `--pwd "$PWD" -B "$PWD"`.
+
 The image's Python needs `numpy`, `astropy`, `pyyaml` and `requests` (plus `oskar`). Check with:
 
 ```bash

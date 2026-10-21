@@ -52,7 +52,8 @@ class SimulationRun:
 
         obs = cfg["observation"]
         self.root = root_name_from_config(cfg)
-        self.workdir = os.path.join(cfg["paths"]["work_dir"], f"{self.root}{cfg['run']['identifier']}")
+        self.workdir = os.path.normpath(os.path.join(cfg["paths"]["work_dir"],
+                                                     f"{self.root}{cfg['run']['identifier']}"))
         self.ra, self.dec = sky_centre(cfg)
         self.skytab = f"{self.root}_skytab.fits" if cfg["sky"]["model"] != "none" else None
 
