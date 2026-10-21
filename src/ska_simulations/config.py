@@ -149,7 +149,7 @@ def resolve_path(path: str | None, base: str | None) -> str | None:
     path = os.path.expanduser(os.path.expandvars(str(path)))
     if base and not os.path.isabs(path):
         path = os.path.join(os.path.expanduser(os.path.expandvars(str(base))), path)
-    return path
+    return os.path.normpath(path)
 
 
 def data_path(cfg: dict, name: str | None) -> str | None:

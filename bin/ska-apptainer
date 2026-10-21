@@ -36,12 +36,17 @@ read -r -a OPTS <<< "${SKA_APPTAINER_OPTS---nv}"
 # in $HOME instead, and relative paths such as the default work_dir "." would
 # then point at your home directory. Binding $PWD and passing --pwd makes the
 # container start in the directory you launched from.
+# Some images still change directory while the container starts up (e.g. in
+# their %environment scripts), so we also pass the launch directory explicitly
+# as SKA_LAUNCH_DIR and cd into it just before running Python.
 BINDS="$REPO"
 if [[ "$PWD" != "$REPO" ]]; then BINDS="$BINDS,$PWD"; fi
 if [[ -n "${SKA_BINDS:-}" ]]; then BINDS="$BINDS,$SKA_BINDS"; fi
 
 ENVPP="$SRC${PYTHONPATH:+:$PYTHONPATH}"
-run=("$APPTAINER" exec "${OPTS[@]}" --pwd "$PWD" --env "PYTHONPATH=$ENVPP" -B "$BINDS" "$SKA_SIF")
+run=("$APPTAINER" exec "${OPTS[@]}" --pwd "$PWD" --env "PYTHONPATH=$ENVPP"
+     --env "SKA_LAUNCH_DIR=$PWD" -B "$BINDS" "$SKA_SIF"
+     sh -c 'cd "$SKA_LAUNCH_DIR" || exit 1; exec "$@"' ska-apptainer)
 
 if [[ "${1:-}" == "--shell" ]]; then
     exec "${run[@]}" bash

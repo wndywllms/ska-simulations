@@ -4,6 +4,7 @@ messages, timing logs and the standard run naming convention.
 """
 from __future__ import annotations
 
+import os
 import select
 import shutil
 import subprocess
@@ -91,6 +92,24 @@ def log_time_to_file(s: str, filename: str, lastime: datetime | None = None) -> 
     with open(filename, "a") as logfile:
         logfile.write(f"{s}: {writetime} \n")
     return timenow
+
+
+def enter_launch_dir() -> None:
+    """cd into $SKA_LAUNCH_DIR if set (by bin/ska-apptainer) and unset it.
+
+    Guards against containers that start in $HOME instead of the directory the
+    user launched from. The variable is removed so that sub-processes (e.g. the
+    OSKAR step, which runs inside the run directory) are not affected.
+    """
+    launch = os.environ.pop("SKA_LAUNCH_DIR", None)
+    if not launch:
+        return
+    if not os.path.isdir(launch):
+        warn(f"SKA_LAUNCH_DIR={launch} is not visible here; is it bound into the container?")
+        return
+    if os.path.realpath(os.getcwd()) != os.path.realpath(launch):
+        warn(f"Started in {os.getcwd()}; changing to launch directory {launch}")
+        os.chdir(launch)
 
 
 def run_root_name(array: str, nhours: float, nchan: int, time_step_s: float,

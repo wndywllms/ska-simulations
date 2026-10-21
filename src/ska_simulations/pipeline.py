@@ -31,7 +31,7 @@ from . import __version__
 from .config import (STEPS, ConfigError, default_config_text, dump_config, load_config,
                      parse_overrides, resolve_path)
 from .skymodels import build_sky_table, sky_centre
-from .utils import (die, log_time_to_file, ms_names, report, root_name_from_config, run,
+from .utils import (die, enter_launch_dir, log_time_to_file, ms_names, report, root_name_from_config, run,
                     separator, warn)
 
 SUMMARY_LOG = "simulation_summary.log"
@@ -52,6 +52,7 @@ class SimulationRun:
 
         obs = cfg["observation"]
         self.root = root_name_from_config(cfg)
+        report(f"Working directory {os.getcwd()}; paths.work_dir = {cfg['paths']['work_dir']}")
         self.workdir = os.path.normpath(os.path.join(cfg["paths"]["work_dir"],
                                                      f"{self.root}{cfg['run']['identifier']}"))
         self.ra, self.dec = sky_centre(cfg)
@@ -286,6 +287,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> None:
+    enter_launch_dir()
     args = build_parser().parse_args(argv)
     if args.print_default_config:
         print(default_config_text())
