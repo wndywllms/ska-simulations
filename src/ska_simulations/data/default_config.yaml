@@ -91,7 +91,7 @@ simulator:
 # -----------------------------------------------------------------------------
 sky:
   model: LoTSSDEEP             # LoTSSDEEP | COSMOS | testsky | cal | none
-  flux_limit_jy: 0.0           # drop sources fainter than this (Jy)
+  flux_limit_jy: 1.0e-3        # drop sources fainter than this (Jy)
   ref_freq_hz: 120.0e6         # reference frequency written to the OSKAR sky table
   spectral_index: -0.7         # used when the catalogue has no spectral index
   lotss_deep:                  # LoTSS-deep fields, recentred on (0,0) - shifted to the phase centre

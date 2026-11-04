@@ -23,7 +23,7 @@ def paint_sources_onto_image(
     maj_col: str = "Maj",
     min_col: str = "Min",
     pa_col: str = "PA",
-    shape_unit: u.Unit = u.arcsec,
+    shape_unit: u.Unit = u.deg,
     min_radius_pix: float = 2,
 ) -> None:
     """
@@ -39,7 +39,7 @@ def paint_sources_onto_image(
     maj_col      : catalogue column name for semi-major axis
     min_col      : catalogue column name for semi-minor axis
     pa_col       : catalogue column name for position angle (degrees E of N)
-    shape_unit   : unit of maj/min columns (default arcsec)
+    shape_unit   : unit of maj/min columns (default deg)
     min_radius_pix : minimum semi-axis painted, in pixels (default 2)
     """
 
@@ -153,7 +153,7 @@ def main(argv=None):
     maj_col        = "MAJ",       # semi-major axis
     min_col        = "MIN",       # semi-minor axis
     pa_col         = "PA",        # position angle, degrees E of N
-    shape_unit     = u.arcsec,
+    shape_unit     = u.deg,
     min_radius_pix = args.min_radius_pix,
     )
 
