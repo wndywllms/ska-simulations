@@ -1,0 +1,184 @@
+Bootstrap: docker
+From: nvidia/cuda:12.8.1-base-ubuntu24.04
+Stage: one
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    export CUDA_ARCH="ALL"
+    apt-get update && apt-get upgrade -y && \
+        apt-get install -y --no-install-recommends \
+        build-essential \
+        casacore-dev \
+        cmake \
+        cuda-cudart-dev-12-8 \
+        libcufft-dev-12-8 \
+        cuda-nvcc-12-8 \
+        git \
+        pkg-config \
+        less
+        
+    apt-get install -y  --no-install-recommends   wget flex bison sudo vim hdf5-tools   rename htop curl rust-all g++ gfortran \
+    python3-dev ipython3 python3-pip python3-venv python3-setuptools python3-h5py python3-sshtunnel python3-pymysql python3-requests python3-cytoolz python3-tqdm python3-pybind11 libpython3-dev python3-magic  \
+    libcfitsio-dev libpng-dev libxml2-dev libarmadillo-dev liblua5.3-dev libfftw3-dev wcslib-dev libgsl-dev libblas-dev libaio1t64 libaio-dev liblapack-dev \
+    libboost-dev libboost-date-time-dev libboost-filesystem-dev libboost-system-dev libboost-test-dev libboost-python-dev libboost-numpy-dev libboost-program-options-dev \
+    libblas-dev  libopenmpi-dev libhdf5-dev libdeflate-dev
+   
+    # special case
+    curl -O https://launchpadlibrarian.net/646633572/libaio1_0.3.113-4_amd64.deb
+    dpkg -i libaio1_0.3.113-4_amd64.deb && rm libaio1_0.3.113-4_amd64.deb
+    
+    python3 -m venv /opt/venv
+    export PATH="/opt/venv/bin:$PATH"
+    pip3 install -U astropy numpy matplotlib setuptools requests
+                  
+    pip3 install -U ipython aplpy psutil
+    
+    #####################################################################
+    ## oskar
+    #####################################################################
+    mkdir -p /home/build/harp_beam
+    cd /home/build/harp_beam
+    git clone https://gitlab.com/quentingueuning/harp_beam.git harp_beam.git
+    cmake harp_beam.git/ -DCUDA_ARCH="${CUDA_ARCH};8.0;8.6"
+    make -j16 && make install
+    mkdir -p /home/build/oskar
+    cd /home/build/oskar
+    git clone https://github.com/OxfordSKA/OSKAR.git OSKAR.git
+    cmake OSKAR.git/ -DCUDA_ARCH="${CUDA_ARCH};9.0;10.0;12.0" -DBUILD_TESTING=OFF
+    make -j16 && make install
+    
+    pip3 install 'git+https://github.com/OxfordSKA/OSKAR.git@master#egg=oskarpy&subdirectory=python'
+
+               
+    #####################################################################
+    ## casacore
+    ## seems we can use the ubuntu casacore and python-casacore packages: - Nope, broken
+    #apt-get install -y casacore-dev python3-casacore
+    cd /opt && git clone --single-branch --filter=blob:none --branch master https://github.com/casacore/casacore.git \
+    && cd /opt/casacore && git checkout 450a568 && rm -rf .git/
+    cd /opt/casacore && mkdir data && cd data && wget --retry-connrefused --no-verbose https://www.astron.nl/iers/WSRT_Measures.ztar && tar xf WSRT_Measures.ztar \
+    && rm WSRT_Measures.ztar
+    cd /opt/casacore && mkdir build && cd build \
+    && cmake -DPORTABLE=False -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release \
+    -DDATA_DIR=/opt/casacore/data -DUSE_OPENMP=True -DUSE_HDF5=True -DBUILD_SISCO=ON .. && make -j 32 && make install && cd /opt/casacore \
+    && rm -r $(ls -A | grep -v data)
+        
+    cd /opt && git clone https://github.com/casacore/python-casacore.git
+    cd /opt/python-casacore && git checkout v3.7.1
+    pip3 install .
+    
+    #####################################################################
+    ## EveryBeam
+    #####################################################################
+    cd /opt && git clone https://git.astron.nl/RD/EveryBeam.git \
+    && cd /opt/EveryBeam && git checkout tags/v0.8.0 && rm -rf .git/objects/pack/
+     cd /opt/EveryBeam && mkdir build && cd build \
+    && cmake -DBUILD_WITH_PYTHON=On .. \
+    && make -j 16 && make install \
+    && rm -rf /opt/EveryBeam/
+
+    export EVERYBEAM_DATADIR=/usr/local/share/everybeam
+        
+    #####################################################################
+    ## IDG (master 20/04/2026)
+    #####################################################################
+    cd /opt && git clone https://gitlab.com/astron-idg/idg.git \
+    && cd /opt/idg && git checkout 54464d64 && rm -rf .git/objects/pack/
+    cd /opt/idg && mkdir build && cd build
+    #cmake -DCMAKE_INSTALL_PREFIX=/usr/local/idg/ -DBUILD_LIB_CUDA=ON -DBUILD_WITH_PYTHON=ON ..
+    cmake -DPORTABLE=True ..
+    make -j 16
+    make install
+    rm -rf /opt/idg/
+    
+    
+    
+    #####################################################################
+    ## Wsclean v3.7
+    #####################################################################
+    cd /opt && git clone https://gitlab.com/aroffringa/wsclean.git
+    cd /opt/wsclean && git checkout v3.7
+    cd /opt/wsclean && mkdir build && cd build \
+    && cmake .. \
+    && make -j 16 && make install
+                   
+    #####################################################################
+    ## AOFlagger (master 10/2/26)
+    #####################################################################
+    cd /opt && git clone https://gitlab.com/aroffringa/aoflagger.git \
+    && cd /opt/aoflagger && git checkout 398fcd5b && rm -rf .git/objects/pack/
+    cd /opt/aoflagger && mkdir build && cd build && mkdir install && cmake -DPORTABLE=True -DBUILD_TESTING=OFF -DENABLE_GUI=OFF .. && make -j 16 && make install
+
+####################################################################
+## DP3 (master 12/2/26)
+#####################################################################
+    #ls /usr/local/share/everybeam
+    #ls /usr/local/lib
+    cd /opt && git clone https://git.astron.nl/RD/DP3.git \
+    && cd /opt/DP3 && git checkout 56995db9 && rm -rf .git/objects/pack/
+
+    cd /opt/DP3 && mkdir build && cd build \
+    && cmake .. \
+    && make -j 16 && make install \
+    && rm -rf /opt/DP3/
+
+    # add "import dp3"
+    export PYTHONPATH=/usr/local/lib/python3.13/site-packages/:$PYTHONPATH
+
+####################################################################
+## RAPTHOR
+####################################################################
+
+    cd /opt/
+    pip3 install --upgrade pip
+    pip3 install git+https://git.astron.nl/RD/rapthor.git
+           
+           
+
+####################################################################
+## STAGE 2
+####################################################################
+
+Bootstrap: docker
+From: nvidia/cuda:12.8.1-base-ubuntu24.04
+Stage: two
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update && apt-get upgrade -y && \
+        apt-get install -y --no-install-recommends \
+        libcasa-tables7t64 \
+        libcufft-12-8 \
+        libgomp1 \
+        libhdf5-103-1t64 \
+    libcfitsio-dev libpng-dev libxml2-dev libarmadillo-dev liblua5.3-dev libfftw3-dev wcslib-dev libgsl-dev libblas-dev libaio1t64 libaio-dev liblapack-dev \
+    libboost-dev libboost-date-time-dev libboost-filesystem-dev libboost-system-dev libboost-test-dev libboost-python-dev libboost-numpy-dev libboost-program-options-dev \
+    libblas-dev  libopenmpi-dev libhdf5-dev libdeflate-dev \
+        python3  ipython3 \
+        git vim less \
+        python3-requests \
+        nodejs \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        
+        
+              
+    # https://github.com/shrieks/ARatmospy
+    cd /opt
+    #mkdir /opt/ARatmospy
+    #cd /opt/ARatmospy
+    git clone https://github.com/shrieks/ARatmospy
+    
+
+%environment
+    export PATH="/opt/venv/bin:$PATH"
+    export PYTHONPATH="/opt/ARatmospy:$PATH"
+    export CASAPATH="/opt/casacore linux"
+
+%files from one
+    /usr/local/bin/wsclean* /usr/local/bin/
+    /usr/local/bin/oskar* /usr/local/bin/
+    /usr/local/bin/* /usr/local/bin/
+    /usr/local/lib/* /usr/local/lib/
+    /usr/local/share/* /usr/local/share/
+    /opt/venv/* /opt/venv/
+    /opt/casacore/* /opt/casacore/
