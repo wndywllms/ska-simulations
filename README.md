@@ -96,7 +96,7 @@ These were extracted from the commented-out parameter blocks in the old `runsimj
 DP3, WSClean, EveryBeam and OSKAR usually come from an Apptainer or Singularity image. You don't need to install this package in the image. `bin/ska-apptainer` runs it straight from your git checkout by binding the repo into the container and putting `src/` on `PYTHONPATH`. Edits you make take effect on the next run. Every step runs inside the container, including the OSKAR step, which the pipeline starts as a separate process that inherits `PYTHONPATH`.
 
 ```bash
-export SKA_SIF=/path/to/ska-sims.sif
+export SKA_SIF=/path/to/skasim_oskar.sif   # built from container/, see below
 export SKA_BINDS=/data-hot,/home/w.williams/projects/skasims   # anything not bound by default
 export PATH=/path/to/ska-simulations/bin:$PATH
 
@@ -130,6 +130,42 @@ export PYTHONPATH=~/.ska-deps        # ska-apptainer appends this after src/
 ```
 
 For a batch job, call the same script from your job script, e.g. `ska-apptainer my_run.yaml --overwrite yes`.
+
+### Building the image (`container/`)
+
+The `container/` folder holds the recipe for the image used with this package:
+
+| File | Purpose |
+|---|---|
+| `Apptainer_skasim.python3` | Apptainer/Singularity definition file (two-stage build, see below) |
+| `build_simg.sh` | builds `skasim_oskar.sif` with `singularity build --fakeroot` and writes the build output to `build_o.log` |
+| `run_sing.sh` | opens an interactive shell in `skasim_oskar.sif` with a clean environment (`-e`, `--noprofile --norc`), binding the paths listed in `$bind_list` |
+
+The definition file builds on the `nvidia/cuda:12.8.1-base-ubuntu24.04` image. The first stage compiles the radio-astronomy software:
+
+- OSKAR, with the harp_beam library and the `oskar` Python bindings
+- casacore (pinned commit, with the WSRT Measures data) and python-casacore v3.7.1
+- EveryBeam v0.8.0, with its Python bindings
+- IDG
+- WSClean v3.7
+- AOFlagger
+- DP3
+- Rapthor
+
+The Python packages go into a virtual environment at `/opt/venv`: astropy, numpy, matplotlib, requests, ipython, aplpy and psutil.
+
+The second stage starts from the same CUDA base image. It installs only the runtime libraries, copies across the binaries, libraries, shared data, `/opt/venv` and casacore's data from the first stage, and clones ARatmospy to `/opt/ARatmospy`. This keeps the final image smaller than the build environment.
+
+To build the image and use it with this package:
+
+```bash
+cd container
+bash build_simg.sh                         # needs fakeroot permission; takes a while
+export SKA_SIF=$PWD/skasim_oskar.sif
+export SKA_CONTAINER_RUNTIME=singularity   # or let ska-apptainer detect it
+```
+
+Use `run_sing.sh` to work interactively in the image without this package. Use `ska-apptainer --shell` for an interactive shell with the package importable.
 
 ## Command-line tools
 
@@ -171,6 +207,8 @@ src/ska_simulations/
     utils.py            command running/logging, coloured output, run naming
     masks.py  facets.py  ds9_to_fits.py  tec_phase.py  igrf14.py  plot_dd_phase_sols.py
 configs/examples/       example run configurations
+bin/ska-apptainer       run the package inside an Apptainer/Singularity image
+container/              image definition file and build/run scripts
 tests/                  pytest suite (uses fake oskar / DP3 / wsclean)
 ```
 
