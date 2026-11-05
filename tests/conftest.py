@@ -78,6 +78,13 @@ def fake_site(tmp_path, monkeypatch):
     monkeypatch.setenv("PYTHONPATH", f"{mod.parent}{os.pathsep}{os.environ.get('PYTHONPATH', '')}")
     monkeypatch.syspath_prepend(str(mod.parent))
 
+    # don't let astropy try to download IERS tables (tests may run offline)
+    xdg = tmp_path / "xdg"
+    (xdg / "astropy").mkdir(parents=True)
+    (xdg / "astropy" / "astropy.cfg").write_text(
+        "[utils.iers.iers]\nauto_download = False\nauto_max_age = 100000\n")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+
     cfg = tmp_path / "site.yaml"
     cfg.write_text(textwrap.dedent(f"""\
         paths:

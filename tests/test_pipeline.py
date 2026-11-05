@@ -33,6 +33,7 @@ def test_full_pipeline_with_fakes(fake_site, monkeypatch):
     cwd = os.getcwd()
     try:
         main([str(site), "--overwrite", "yes", "--set", "observation.nchan=20",
+              "--set", "observation.nhours=1",
               "--set", "simulator.cable_errors=true", "--set", "sky.flux_limit_jy=1e-3"])
     finally:
         os.chdir(cwd)
@@ -45,5 +46,24 @@ def test_full_pipeline_with_fakes(fake_site, monkeypatch):
     assert mask.sum() > 0
     ws2 = (run / "wsclean2.log").read_text()
     assert "-abs-threshold 0.5mJy" in ws2 and "-fits-mask" in ws2
+    assert "-beam-model OSKARDipole" in ws2
+    assert "-beam-model OSKARDipole" in (run / "wsclean1.log").read_text()
     summary = (run / "simulation_summary.log").read_text()
     assert "*oskar run took" in summary and "*ws2 run took" in summary
+
+
+def test_beam_models_configurable():
+    cfg = load_config(None, {"postprocess": {"average": True}})
+    run = SimulationRun(cfg)
+    cmd = run.dp3_commands()[0][0]
+    assert "steps=[avg,applybeam]" in cmd and "applybeam.elementmodel=oskardipole" in cmd
+    assert "-beam-model OSKARDipole" in run.wsclean_dirty_command()
+
+    cfg = load_config(None, {"postprocess": {"beam_element_model": None},
+                             "imaging": {"beam_model": None}})
+    run = SimulationRun(cfg)
+    assert "elementmodel" not in run.dp3_commands()[0][0]
+    assert "-beam-model" not in run.wsclean_dirty_command()
+
+    cfg = load_config(None, {"postprocess": {"apply_beam": False, "average": True}})
+    assert "elementmodel" not in SimulationRun(cfg).dp3_commands()[0][0]

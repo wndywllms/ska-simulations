@@ -97,8 +97,9 @@ class SimulationRun:
         im = self.cfg["imaging"]
         tmp = self.cfg["paths"]["wsclean_temp_dir"]
         temp = f"-temp-dir {tmp} " if tmp else ""
+        beam = f" -beam-model {im['beam_model']}" if im["beam_model"] else ""
         return (f"wsclean {temp}-size {im['npix']} {im['npix']} -scale {im['cell']} "
-                f"-name {name} -weight {im['weight']}")
+                f"-name {name} -weight {im['weight']}{beam}")
 
     def threshold(self) -> str:
         im = self.cfg["imaging"]
@@ -192,6 +193,8 @@ class SimulationRun:
             if pp["average"]:
                 cmd += (f" avg.type=averager avg.timestep={pp['avg_time_step']}"
                         f" avg.freqstep={pp['avg_freq_step']}")
+            if pp["apply_beam"] and pp["beam_element_model"]:
+                cmd += f" applybeam.elementmodel={pp['beam_element_model']}"
             cmds.append((cmd, f"dppp_{'_'.join(steps)}_{msi}.log"))
         return cmds
 

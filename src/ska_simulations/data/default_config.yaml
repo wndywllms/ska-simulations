@@ -132,6 +132,7 @@ sensitivity:
 # -----------------------------------------------------------------------------
 postprocess:
   apply_beam: true
+  beam_element_model: oskardipole   # DP3 applybeam.elementmodel; null to use DP3's default
   average: false
   avg_time_step: 1
   avg_freq_step: 1
@@ -143,6 +144,7 @@ imaging:
   npix: 4096                   # 16384 ~ 6.8 deg at 1.5"; 8192; 4096 (test sky); 512 (calibrator)
   cell: 1.5arcsec
   weight: briggs -1
+  beam_model: OSKARDipole      # WSClean -beam-model (EveryBeam element model); null to omit
   name_suffix: robm1           # image names: ws_<root>_<name_suffix>[_mask]
   dirty_only: false            # stop after the dirty image
   channels_out: 2
