@@ -152,7 +152,7 @@ The definition file builds on the `nvidia/cuda:12.8.1-base-ubuntu24.04` image. T
 - DP3
 - Rapthor
 
-The Python packages go into a virtual environment at `/opt/venv`: astropy, numpy, matplotlib, requests, ipython, aplpy and psutil.
+The Python packages go into a virtual environment at `/opt/venv`: astropy, numpy, matplotlib, requests, pyyaml, ipython, aplpy and psutil.
 
 The second stage starts from the same CUDA base image. It installs only the runtime libraries, copies across the binaries, libraries, shared data, `/opt/venv` and casacore's data from the first stage, and clones ARatmospy to `/opt/ARatmospy`. This keeps the final image smaller than the build environment.
 

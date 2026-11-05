@@ -29,7 +29,7 @@ Stage: one
     
     python3 -m venv /opt/venv
     export PATH="/opt/venv/bin:$PATH"
-    pip3 install -U astropy numpy matplotlib setuptools requests
+    pip3 install -U astropy numpy matplotlib setuptools requests pyyaml
                   
     pip3 install -U ipython aplpy psutil
     
@@ -171,7 +171,7 @@ Stage: two
 
 %environment
     export PATH="/opt/venv/bin:$PATH"
-    export PYTHONPATH="/opt/ARatmospy:$PATH"
+    export PYTHONPATH="/opt/ARatmospy${PYTHONPATH:+:$PYTHONPATH}"
     export CASAPATH="/opt/casacore linux"
 
 %files from one
